@@ -13,7 +13,7 @@ Go (https://go.dev/doc/install)
 git clone --recurse-submodules -j8 https://github.com/rdeepak2002/reddit-place-clone-server.git
 ```
 
-2. Deploy a server application with this code (Heroku can directly deploy this Go project from a GitHub repository, but you need to add the submodules buildpack, NodeJS buildpack, and Go buildpack)
+2. Deploy a server application with this code (Heroku can directly deploy this Go project from a GitHub repository, but you need to add the submodules buildpack and Go buildpack)
 
 ```shell
 heroku buildpacks:add https://github.com/dmathieu/heroku-buildpack-submodules -i 1
