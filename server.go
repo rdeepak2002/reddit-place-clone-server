@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 
@@ -47,5 +48,9 @@ func main() {
 	})
 
 	// start the server
-	router.Run(":" + port)
+	err := router.Run(":" + port)
+
+	if err != nil {
+		log.Fatal("Error launching server: ", err)
+	}
 }
