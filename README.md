@@ -19,13 +19,12 @@ git clone --recurse-submodules -j8 https://github.com/rdeepak2002/reddit-place-c
 heroku buildpacks:add https://github.com/dmathieu/heroku-buildpack-submodules -i 1
 ```
 
-3. Add the following code anywhere to view the image 
+3. Create a .env file with the credentials for a Redis connection (you can get a free instance from here: https://redis.com/)
 
-```markdown
-<img alt="image" src="https://website/static/image.png" width="300"/>
+```dotenv
+REDIS_ADDRESS="redis-xxx.com:#####"
+REDIS_PASSWORD="really_long_password_string"
 ```
-
-Note: Replace the "src" with the url your server is being hosted on
 
 ## Example Embed in README.md
 

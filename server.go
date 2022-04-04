@@ -1,10 +1,12 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/contrib/static"
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
 	_ "github.com/heroku/x/hmetrics/onload"
 	"image"
 	"image/color"
@@ -14,6 +16,8 @@ import (
 	"strconv"
 )
 
+import _ "github.com/joho/godotenv/autoload"
+
 // SetPixelRequestBody JSON format for set pixel request
 type SetPixelRequestBody struct {
 	X int   `json:"x"`
@@ -21,6 +25,35 @@ type SetPixelRequestBody struct {
 	R uint8 `json:"red"`
 	G uint8 `json:"green"`
 	B uint8 `json:"blue"`
+}
+
+var ctx = context.Background()
+var rdb *redis.Client
+
+func setupRedisClient() {
+	// address usually in form redis-xxx.com:#####
+	redisAddress := os.Getenv("REDIS_ADDRESS")
+
+	// password usually in form of a really long string of characters
+	redisPassword := os.Getenv("REDIS_PASSWORD")
+
+	// create redis client connection
+	rdb = redis.NewClient(&redis.Options{
+		Addr:     redisAddress,
+		Password: redisPassword, // no password set
+		DB:       0,             // use default DB
+	})
+
+	// test whether redis connection works
+	err := rdb.Set(ctx, "testKey", "testValue", 0).Err()
+	if err != nil {
+		log.Fatal("Issue with Redis connection when testing setting key value pair")
+	}
+
+	_, err = rdb.Get(ctx, "key").Result()
+	if err != nil {
+		log.Fatal("Issue with Redis connection when getting key1")
+	}
 }
 
 // readEnvironmentVariables reads the port and image options from environment variables.
@@ -168,6 +201,9 @@ func drawPixelToImage(pixelX int, pixelY int, newColor color.RGBA) (string, stri
 func main() {
 	// read environment variables
 	port, imageWidth, imageHeight := readEnvironmentVariables()
+
+	// setup the Redis client
+	setupRedisClient()
 
 	// generate blank image
 	generateBlankImage(imageWidth, imageHeight)
