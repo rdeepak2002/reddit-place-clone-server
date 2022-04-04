@@ -1,2 +1,2 @@
 echo "Running release script..."
-cd client && npm install -g rollup && npm install && npm run build
+cd client && yarn add -g rollup && yarn install && yarn build
