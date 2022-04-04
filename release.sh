@@ -1,2 +1,2 @@
 echo "Running release script..."
-cd client && yarn && yarn build
+cd client && npm install && npm run build
