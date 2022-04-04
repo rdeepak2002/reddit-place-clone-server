@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"image"
 	"image/color"
 	"image/png"
@@ -58,26 +59,42 @@ func readEnvironmentVariables() (string, int, int) {
 	return port, widthInt, heightInt
 }
 
-// generateImage generates an image with given width and height
+// generateBlankImage generates an image with given width and height
 // The image is written to the static folder.
-func generateImage(width int, height int) {
-	upLeft := image.Point{}
-	lowRight := image.Point{X: width, Y: height}
+func generateBlankImage(width int, height int) {
+	imagePath := "./static/image.png"
+	shouldGenerateImage := false
 
-	img := image.NewRGBA(image.Rectangle{Min: upLeft, Max: lowRight})
-
-	// Set color for each pixel.
-	for x := 0; x < width; x++ {
-		for y := 0; y < height; y++ {
-			img.Set(x, y, color.White)
-		}
+	if _, err := os.Stat(imagePath); err == nil {
+		// file already exists
+		shouldGenerateImage = false
+	} else if errors.Is(err, os.ErrNotExist) {
+		// file does not exist
+		shouldGenerateImage = true
+	} else {
+		// schrodinger: file may or may not exist. See err for details.
+		shouldGenerateImage = true
 	}
 
-	// Encode as PNG.
-	f, _ := os.Create("./static/image.png")
-	imageWriteErr := png.Encode(f, img)
-	if imageWriteErr != nil {
-		log.Fatal("Error writing image: ", imageWriteErr)
+	if shouldGenerateImage {
+		upLeft := image.Point{}
+		lowRight := image.Point{X: width, Y: height}
+
+		img := image.NewRGBA(image.Rectangle{Min: upLeft, Max: lowRight})
+
+		// Set color for each pixel.
+		for x := 0; x < width; x++ {
+			for y := 0; y < height; y++ {
+				img.Set(x, y, color.White)
+			}
+		}
+
+		// Encode as PNG.
+		f, _ := os.Create(imagePath)
+		imageWriteErr := png.Encode(f, img)
+		if imageWriteErr != nil {
+			log.Fatal("Error writing image: ", imageWriteErr)
+		}
 	}
 }
 
@@ -152,7 +169,7 @@ func main() {
 	port, imageWidth, imageHeight := readEnvironmentVariables()
 
 	// generate blank image
-	generateImage(imageWidth, imageHeight)
+	generateBlankImage(imageWidth, imageHeight)
 
 	// create instance of gin router
 	router := gin.New()
