@@ -53,25 +53,15 @@ func readEnvironmentVariables() (string, int, int) {
 // generateImage generates an image with given width and height
 // The image is written to the static folder.
 func generateImage(width int, height int) {
-	upLeft := image.Point{0, 0}
-	lowRight := image.Point{width, height}
+	upLeft := image.Point{}
+	lowRight := image.Point{X: width, Y: height}
 
-	img := image.NewRGBA(image.Rectangle{upLeft, lowRight})
-
-	// Colors are defined by Red, Green, Blue, Alpha uint8 values.
-	cyan := color.RGBA{100, 200, 200, 0xff}
+	img := image.NewRGBA(image.Rectangle{Min: upLeft, Max: lowRight})
 
 	// Set color for each pixel.
 	for x := 0; x < width; x++ {
 		for y := 0; y < height; y++ {
-			switch {
-			case x < width/2 && y < height/2: // upper left quadrant
-				img.Set(x, y, cyan)
-			case x >= width/2 && y >= height/2: // lower right quadrant
-				img.Set(x, y, color.White)
-			default:
-				// Use zero value.
-			}
+			img.Set(x, y, color.White)
 		}
 	}
 
@@ -83,11 +73,75 @@ func generateImage(width int, height int) {
 	}
 }
 
+// drawPixelToImage draws a pixel with a color to given x, y position
+func drawPixelToImage(pixelX int, pixelY int) string {
+	f, imageFileReadErr := os.Open("./static/image.png")
+
+	if imageFileReadErr != nil {
+		log.Fatal("Error reading image file: ", imageFileReadErr)
+	}
+
+	defer func(f *os.File) {
+		fileCloseErr := f.Close()
+		if fileCloseErr != nil {
+			log.Fatal("Error closing file: ", fileCloseErr)
+		}
+	}(f)
+
+	exisitingImage, _, imageDecodeErr := image.Decode(f)
+
+	if imageDecodeErr != nil {
+		log.Fatal("Error decoding image: ", imageDecodeErr)
+	}
+
+	width := exisitingImage.Bounds().Size().X
+	height := exisitingImage.Bounds().Size().Y
+
+	if pixelX >= width {
+		return "Invalid x coordinate"
+	}
+
+	if pixelY >= height {
+		return "Invalid y coordinate"
+	}
+
+	// generate new image file
+	upLeft := image.Point{}
+	lowRight := image.Point{X: width, Y: height}
+
+	newImg := image.NewRGBA(image.Rectangle{Min: upLeft, Max: lowRight})
+
+	// Set color for each pixel.
+	for x := 0; x < width; x++ {
+		for y := 0; y < height; y++ {
+			if x == pixelX && y == pixelY {
+				newImg.Set(x, y, color.Black)
+			} else {
+				newImg.Set(x, y, exisitingImage.At(x, y))
+			}
+		}
+	}
+
+	// Encode as PNG.
+	newImageFile, _ := os.Create("./static/image.png")
+	imageWriteErr := png.Encode(newImageFile, newImg)
+	if imageWriteErr != nil {
+		log.Fatal("Error writing image: ", imageWriteErr)
+	}
+
+	return "Successfully placed pixel"
+}
+
 // main will launch the server application
 func main() {
-	// generate sample image
+	// read environment variables
 	port, imageWidth, imageHeight := readEnvironmentVariables()
+
+	// generate blank image
 	generateImage(imageWidth, imageHeight)
+
+	// draw pixel to image
+	drawPixelToImage(10, 10)
 
 	// create instance of gin router
 	router := gin.New()
