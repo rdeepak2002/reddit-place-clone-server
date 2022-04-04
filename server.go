@@ -2,16 +2,16 @@ package main
 
 import (
 	"errors"
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/contrib/static"
+	"github.com/gin-gonic/gin"
+	_ "github.com/heroku/x/hmetrics/onload"
 	"image"
 	"image/color"
 	"image/png"
 	"log"
-	"net/http"
 	"os"
 	"strconv"
-
-	"github.com/gin-gonic/gin"
-	_ "github.com/heroku/x/hmetrics/onload"
 )
 
 // SetPixelRequestBody JSON format for set pixel request
@@ -31,7 +31,7 @@ func readEnvironmentVariables() (string, int, int) {
 	port := os.Getenv("PORT")
 
 	if port == "" {
-		defaultPort := "8080"
+		defaultPort := "3000"
 		port = defaultPort
 	}
 
@@ -187,19 +187,27 @@ func main() {
 	}(),
 	)
 
+	config := cors.DefaultConfig()
+	config.AllowOrigins = []string{"http://localhost:8080"}
+
+	router.Use(cors.New(config))
+
 	// use gin logger
 	router.Use(gin.Logger())
 
 	// load html from templates folder
-	router.LoadHTMLGlob("templates/*.html")
+	//router.LoadHTMLGlob("templates/*.html")
 
 	// load static content from static folder
 	router.Static("/static", "static")
 
+	// Serve frontend static files
+	router.Use(static.Serve("/", static.LocalFile("./client/public", true)))
+
 	// return index page for default route
-	router.GET("/", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "index.html", nil)
-	})
+	//router.GET("/", func(c *gin.Context) {
+	//	c.HTML(http.StatusOK, "index.html", nil)
+	//})
 
 	// route to set a pixel
 	router.POST("/set_pixel", func(c *gin.Context) {
