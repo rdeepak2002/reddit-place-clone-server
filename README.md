@@ -15,7 +15,7 @@ Go (https://go.dev/doc/install)
 <img alt="image" src="https://website/static/image.png" width="300"/>
 ```
 
-Note: Replace the url with the url your server is being hosted on
+Note: Replace the "src" with the url your server is being hosted on
 
 ## Example
 
