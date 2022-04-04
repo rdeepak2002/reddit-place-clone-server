@@ -5,11 +5,21 @@ Server application to simulate r/place
 ## Requirements
 Go (https://go.dev/doc/install)
 
-## How to Use
+## Get Started
 
-1. Deploy a server application with this code (Heroku can directly deploy this Go project from a GitHub repository)
+1. Clone the repository
 
-2. Add the following anywhere to view the image 
+```shell
+git clone --recurse-submodules -j8 https://github.com/rdeepak2002/reddit-place-clone-server.git
+```
+
+2. Deploy a server application with this code (Heroku can directly deploy this Go project from a GitHub repository, but you need to add the submodules buildpack)
+
+```shell
+heroku buildpacks:add https://github.com/dmathieu/heroku-buildpack-submodules -i 1
+```
+
+3. Add the following code anywhere to view the image 
 
 ```markdown
 <img alt="image" src="https://website/static/image.png" width="300"/>
@@ -30,4 +40,8 @@ The above example is using the following markdown
 <img alt="image" src="https://reddit-place-clone-server.herokuapp.com/static/image.png" width="300"/> 
 ```
 
-[//]: # (heroku buildpacks:add https://github.com/dmathieu/heroku-buildpack-submodules -i 1)
+## Update Web Application Code
+
+```shell
+git submodule update --remote 
+```
