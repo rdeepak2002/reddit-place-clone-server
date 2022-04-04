@@ -5,6 +5,18 @@ Server application to simulate r/place but for README files
 ## Requirements
 Go (https://go.dev/doc/install)
 
+## How to Use
+
+1. Deploy this repository (Heroku can directly deploy this project from a GitHub repo)
+
+2. Add the following to your README.md file
+
+```markdown
+<img alt="image" src="https://website/static/image.png" width="300"/>
+```
+
+Note: Replace the url with the url your server is being hosted on
+
 ## Example
 
 Add pixels here: https://reddit-place-readme-server.herokuapp.com/
