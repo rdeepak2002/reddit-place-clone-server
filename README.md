@@ -24,3 +24,8 @@ Add pixels here: https://reddit-place-readme-server.herokuapp.com/
 Then refresh the page and notice the image below changing.
 
 <img alt="image" src="https://reddit-place-readme-server.herokuapp.com/static/image.png" width="300"/> 
+
+Note: The above example is using the following markdown
+```markdown
+<img alt="image" src="https://reddit-place-readme-server.herokuapp.com/static/image.png" width="300"/> 
+```
