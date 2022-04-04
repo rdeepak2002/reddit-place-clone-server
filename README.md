@@ -11,4 +11,4 @@ Add pixels here: https://reddit-place-readme-server.herokuapp.com/
 
 Then refresh the page and notice the image below changing.
 
-<img src="https://reddit-place-readme-server.herokuapp.com/static/image.png" width="300"/> 
+<img alt="image" src="https://reddit-place-readme-server.herokuapp.com/static/image.png" width="300"/> 
