@@ -7,7 +7,7 @@ Go (https://go.dev/doc/install)
 
 ## How to Use
 
-1. Deploy this repository (Heroku can directly deploy this project from a GitHub repo)
+1. Deploy a server application with this code (Heroku can directly deploy this go project from a GitHub repository)
 
 2. Add the following to your README.md file
 
