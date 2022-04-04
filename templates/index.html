@@ -7,8 +7,8 @@
 </head>
 
 <body style="background: white;">
-<image id="output_image" style="border: dotted black; width: 300px; height: 300px;" alt="image"
-       src="/static/image.png"></image>
+<img id="output_image" style="border: dotted black; width: 300px; height: 300px;" alt="image"
+     src="/static/image.png"/>
 <form id="input-form">
     <label>
         X
@@ -67,9 +67,13 @@
         console.log(postData)
 
         $.ajax(settings).done(function (response) {
-            console.log(response);
+            if (response?.status === "error") {
+                alert(response?.message || "Error creating pixel.");
+            }
+
             $("#output_image").attr("src", "/static/image.png?" + (new Date()).getTime());
         }).catch(function (err) {
+            alert(JSON.parse(err?.responseText || {}).message || "Error creating pixel.");
             console.error(err?.responseText);
         });
     }

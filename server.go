@@ -82,7 +82,7 @@ func generateImage(width int, height int) {
 }
 
 // drawPixelToImage draws a pixel with a color to given x, y position
-func drawPixelToImage(pixelX int, pixelY int, newColor color.RGBA) string {
+func drawPixelToImage(pixelX int, pixelY int, newColor color.RGBA) (string, string) {
 	log.Println("________")
 	log.Println("Drawing pixel:")
 	log.Println(pixelX)
@@ -112,11 +112,11 @@ func drawPixelToImage(pixelX int, pixelY int, newColor color.RGBA) string {
 	height := exisitingImage.Bounds().Size().Y
 
 	if pixelX < 0 || pixelX >= width {
-		return "Invalid x coordinate for pixel."
+		return "Invalid x coordinate for pixel.", "error"
 	}
 
 	if pixelY < 0 || pixelY >= height {
-		return "Invalid y coordinate for pixel."
+		return "Invalid y coordinate for pixel.", "error"
 	}
 
 	// generate new image file
@@ -143,7 +143,7 @@ func drawPixelToImage(pixelX int, pixelY int, newColor color.RGBA) string {
 		log.Fatal("Error writing image: ", imageWriteErr)
 	}
 
-	return "Successfully placed pixel."
+	return "Successfully placed pixel.", "success"
 }
 
 // main will launch the server application
@@ -196,19 +196,17 @@ func main() {
 		if err != nil {
 			c.JSON(400, gin.H{
 				"status":  "error",
-				"message": "Invalid request body.",
+				"message": "Invalid request. Please verify your inputs are valid and within the canvas.",
 			})
 			return
 		}
 
-		// TODO: check request colors provided are within 0 to 255 range (inclusive)
-
 		// draw pixel to image
-		pixelDrawStatus := drawPixelToImage(setPixelRequest.X, setPixelRequest.Y, color.RGBA{R: uint8(setPixelRequest.R), G: uint8(setPixelRequest.G), B: uint8(setPixelRequest.B), A: 0xFF})
+		pixelDrawStatusMessage, pixelDrawStatus := drawPixelToImage(setPixelRequest.X, setPixelRequest.Y, color.RGBA{R: uint8(setPixelRequest.R), G: uint8(setPixelRequest.G), B: uint8(setPixelRequest.B), A: 0xFF})
 
 		c.JSON(200, gin.H{
-			"status":  "success",
-			"message": pixelDrawStatus,
+			"status":  pixelDrawStatus,
+			"message": pixelDrawStatusMessage,
 		})
 	})
 
