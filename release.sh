@@ -1,3 +1,3 @@
 echo "Running release script..."
-cd client && yarn && yarn build
+cd client && npm install --global rollup && yarn && yarn build
 echo "Done running release script!"
