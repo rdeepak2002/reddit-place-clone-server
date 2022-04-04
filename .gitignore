@@ -1,3 +1,8 @@
+# Image for drawing pixels onto
+static/image.png
+static/image.jpg
+static/image.jpeg
+
 # General
 .DS_Store
 .AppleDouble
