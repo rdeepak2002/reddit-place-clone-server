@@ -33,12 +33,12 @@ Add pixels here: https://reddit-place-clone-server.herokuapp.com/
 
 Then refresh the page and notice the image below changing (note that it is blurrier than the one present on the web application due to the lack of CSS styling in GitHub README's).
 
-<img alt="image" src="https://reddit-place-clone-server.herokuapp.com/static/image.png" style="border: dotted black; width: 32px; height: 32px; image-rendering: pixelated; image-rendering: -moz-crisp-edges; image-rendering: crisp-edges;"/> 
+<img alt="image" src="https://reddit-place-clone-server.herokuapp.com/static/image.png" style="border: dotted black; width: 300px; height: 300px; image-rendering: pixelated; image-rendering: -moz-crisp-edges; image-rendering: crisp-edges;"/> 
 
 The above example is using the following markdown:
 
 ```markdown
-<img alt="image" src="https://reddit-place-clone-server.herokuapp.com/static/image.png" style="border: dotted black; width: 32px; height: 32px; image-rendering: pixelated; image-rendering: -moz-crisp-edges; image-rendering: crisp-edges;"/> 
+<img alt="image" src="https://reddit-place-clone-server.herokuapp.com/static/image.png" style="border: dotted black; width: 300px; height: 300px; image-rendering: pixelated; image-rendering: -moz-crisp-edges; image-rendering: crisp-edges;"/> 
 ```
 
 ## Update Web Application Code
