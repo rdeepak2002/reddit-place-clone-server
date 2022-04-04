@@ -29,3 +29,5 @@ The above example is using the following markdown
 ```markdown
 <img alt="image" src="https://reddit-place-clone-server.herokuapp.com/static/image.png" width="300"/> 
 ```
+
+[//]: # (heroku buildpacks:add https://github.com/dmathieu/heroku-buildpack-submodules -i 1)

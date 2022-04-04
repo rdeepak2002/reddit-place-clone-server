@@ -1,0 +1,6 @@
+[submodule "public"]
+	path = public
+	url = https://github.com/rdeepak2002/reddit-place-clone-web-app
+[submodule "web-app"]
+	path = web-app
+	url = https://github.com/rdeepak2002/reddit-place-clone-web-app
