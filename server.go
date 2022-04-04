@@ -195,9 +195,6 @@ func main() {
 	// use gin logger
 	router.Use(gin.Logger())
 
-	// load html from templates folder
-	//router.LoadHTMLGlob("templates/*.html")
-
 	// load static content from static folder
 	router.Static("/static", "static")
 
