@@ -1,3 +1,3 @@
 echo "Running release script..."
-cd client && npm install --global rollup && npm install --global rollup-plugin-svelte && yarn && yarn build
+cd client && yarn && yarn build
 echo "Done running release script!"
