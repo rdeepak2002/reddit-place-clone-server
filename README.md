@@ -1,6 +1,6 @@
 # Reddit Place Clone
 
-Server application to simulate r/place
+Application to simulate r/place
 
 ## Requirements
 Go (https://go.dev/doc/install)
