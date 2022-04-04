@@ -13,6 +13,14 @@ import (
 	_ "github.com/heroku/x/hmetrics/onload"
 )
 
+type SetPixelRequestBody struct {
+	X int   `json:"x"`
+	Y int   `json:"y"`
+	R uint8 `json:"red"`
+	G uint8 `json:"green"`
+	B uint8 `json:"blue"`
+}
+
 // readEnvironmentVariables reads the port and image options from environment variables.
 // If environment variables are not provided, default values will be used.
 // It returns the server port, image width, and image height
@@ -74,7 +82,13 @@ func generateImage(width int, height int) {
 }
 
 // drawPixelToImage draws a pixel with a color to given x, y position
-func drawPixelToImage(pixelX int, pixelY int) string {
+func drawPixelToImage(pixelX int, pixelY int, newColor color.RGBA) string {
+	log.Println("________")
+	log.Println("Drawing pixel:")
+	log.Println(pixelX)
+	log.Println(pixelY)
+	log.Println(newColor)
+
 	f, imageFileReadErr := os.Open("./static/image.png")
 
 	if imageFileReadErr != nil {
@@ -97,12 +111,12 @@ func drawPixelToImage(pixelX int, pixelY int) string {
 	width := exisitingImage.Bounds().Size().X
 	height := exisitingImage.Bounds().Size().Y
 
-	if pixelX >= width {
-		return "Invalid x coordinate"
+	if pixelX < 0 || pixelX >= width {
+		return "Invalid x coordinate for pixel."
 	}
 
-	if pixelY >= height {
-		return "Invalid y coordinate"
+	if pixelY < 0 || pixelY >= height {
+		return "Invalid y coordinate for pixel."
 	}
 
 	// generate new image file
@@ -115,7 +129,7 @@ func drawPixelToImage(pixelX int, pixelY int) string {
 	for x := 0; x < width; x++ {
 		for y := 0; y < height; y++ {
 			if x == pixelX && y == pixelY {
-				newImg.Set(x, y, color.Black)
+				newImg.Set(x, y, newColor)
 			} else {
 				newImg.Set(x, y, exisitingImage.At(x, y))
 			}
@@ -129,7 +143,7 @@ func drawPixelToImage(pixelX int, pixelY int) string {
 		log.Fatal("Error writing image: ", imageWriteErr)
 	}
 
-	return "Successfully placed pixel"
+	return "Successfully placed pixel."
 }
 
 // main will launch the server application
@@ -140,11 +154,10 @@ func main() {
 	// generate blank image
 	generateImage(imageWidth, imageHeight)
 
-	// draw pixel to image
-	drawPixelToImage(10, 10)
-
 	// create instance of gin router
 	router := gin.New()
+
+	// TODO: add rate limiting (https://github.com/ulule/limiter-examples/blob/master/gin/main.go)
 
 	// do not cache
 	router.Use(func() gin.HandlerFunc {
@@ -168,6 +181,35 @@ func main() {
 	// return index page for default route
 	router.GET("/", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "index.html", nil)
+	})
+
+	// route to set a pixel
+	router.POST("/set_pixel", func(c *gin.Context) {
+		var setPixelRequest SetPixelRequestBody
+
+		log.Println("________")
+		log.Println("Received request to draw pixel:")
+		log.Println(setPixelRequest)
+
+		err := c.BindJSON(&setPixelRequest)
+
+		if err != nil {
+			c.JSON(400, gin.H{
+				"status":  "error",
+				"message": "Invalid request body.",
+			})
+			return
+		}
+
+		// TODO: check request colors provided are within 0 to 255 range (inclusive)
+
+		// draw pixel to image
+		pixelDrawStatus := drawPixelToImage(setPixelRequest.X, setPixelRequest.Y, color.RGBA{R: uint8(setPixelRequest.R), G: uint8(setPixelRequest.G), B: uint8(setPixelRequest.B), A: 0xFF})
+
+		c.JSON(200, gin.H{
+			"status":  "success",
+			"message": pixelDrawStatus,
+		})
 	})
 
 	// start the server
