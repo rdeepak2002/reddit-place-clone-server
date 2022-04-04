@@ -14,6 +14,7 @@ import (
 	_ "github.com/heroku/x/hmetrics/onload"
 )
 
+// SetPixelRequestBody JSON format for set pixel request
 type SetPixelRequestBody struct {
 	X int   `json:"x"`
 	Y int   `json:"y"`
