@@ -2,7 +2,8 @@ package main
 
 import (
 	"context"
-	"errors"
+	"encoding/base64"
+	"fmt"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/contrib/static"
 	"github.com/gin-gonic/gin"
@@ -11,24 +12,94 @@ import (
 	"image"
 	"image/color"
 	"image/png"
+	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"strconv"
+	"strings"
 )
 
 import _ "github.com/joho/godotenv/autoload"
 
 // SetPixelRequestBody JSON format for set pixel request
 type SetPixelRequestBody struct {
-	X int   `json:"x"`
-	Y int   `json:"y"`
-	R uint8 `json:"red"`
-	G uint8 `json:"green"`
-	B uint8 `json:"blue"`
+	X     int   `json:"x"`
+	Y     int   `json:"y"`
+	Red   uint8 `json:"red"`
+	Green uint8 `json:"green"`
+	Blue  uint8 `json:"blue"`
 }
 
 var ctx = context.Background()
 var rdb *redis.Client
+
+func base64ToPng(data string) {
+	base64PngPrefix := "data:image/png;base64,"
+	base64JpegPrefix := "data:image/jpeg;base64,"
+
+	if strings.HasPrefix(data, base64PngPrefix) {
+		log.Println("Converting base 64 png to file")
+		data = data[len(base64PngPrefix):]
+	} else if strings.HasPrefix(data, base64JpegPrefix) {
+		log.Println("Converting base 64 jpeg to file")
+		data = data[len(base64JpegPrefix):]
+	}
+
+	reader := base64.NewDecoder(base64.StdEncoding, strings.NewReader(data))
+	m, formatString, err := image.Decode(reader)
+	if err != nil {
+		log.Fatal(err)
+	}
+	bounds := m.Bounds()
+	fmt.Println(bounds, formatString)
+
+	//Encode from image format to writer
+	pngFilename := "./static/image.png"
+	f, err := os.OpenFile(pngFilename, os.O_WRONLY|os.O_CREATE, 0777)
+	if err != nil {
+		log.Fatal("Error opening png file for base 64 dump", err)
+		return
+	}
+
+	err = png.Encode(f, m)
+	if err != nil {
+		log.Fatal("Error saving base 64 to png", err)
+		return
+	}
+
+	log.Println("Png file", pngFilename, "created")
+}
+
+func imageToBase64String(filename string) string {
+	// Read the entire file into a byte slice
+	bytes, err := ioutil.ReadFile(filename)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var base64Encoding string
+
+	// Determine the content type of the image file
+	mimeType := http.DetectContentType(bytes)
+
+	// Prepend the appropriate URI scheme header depending
+	// on the MIME type
+	switch mimeType {
+	case "image/jpeg":
+		base64Encoding += "data:image/jpeg;base64,"
+	case "image/png":
+		base64Encoding += "data:image/png;base64,"
+	}
+
+	// Append the base64 encoded output
+	base64Encoding += base64.StdEncoding.EncodeToString(bytes)
+
+	log.Println("Converted image to base 64")
+
+	// Print the full base64 representation of the image
+	return base64Encoding
+}
 
 func setupRedisClient() {
 	// address usually in form redis-xxx.com:#####
@@ -54,6 +125,20 @@ func setupRedisClient() {
 	if err != nil {
 		log.Fatal("Issue with Redis connection when getting key1")
 	}
+}
+
+func saveCurrentImageToRedis() {
+	imagePath := "./static/image.png"
+
+	// save base 64 encoded image to redis
+	base64Image := imageToBase64String(imagePath)
+
+	redisImageSaveErr := rdb.Set(ctx, "image", base64Image, 0).Err()
+	if redisImageSaveErr != nil {
+		log.Fatal("Error saving base64 encoded image to Redis")
+	}
+
+	log.Println("Saved base64 image to Redis")
 }
 
 // readEnvironmentVariables reads the port and image options from environment variables.
@@ -97,20 +182,11 @@ func readEnvironmentVariables() (string, int, int) {
 // The image is written to the static folder.
 func generateBlankImage(width int, height int) {
 	imagePath := "./static/image.png"
-	shouldGenerateImage := false
 
-	if _, err := os.Stat(imagePath); err == nil {
-		// file already exists
-		shouldGenerateImage = false
-	} else if errors.Is(err, os.ErrNotExist) {
-		// file does not exist
-		shouldGenerateImage = true
-	} else {
-		// schrodinger: file may or may not exist. See err for details.
-		shouldGenerateImage = true
-	}
+	currentBase64Image, err := rdb.Get(ctx, "image").Result()
 
-	if shouldGenerateImage {
+	if err == redis.Nil {
+		// image not present in Redis, so generate a blank one
 		upLeft := image.Point{}
 		lowRight := image.Point{X: width, Y: height}
 
@@ -129,6 +205,12 @@ func generateBlankImage(width int, height int) {
 		if imageWriteErr != nil {
 			log.Fatal("Error writing image: ", imageWriteErr)
 		}
+	} else if err != nil {
+		log.Fatal("Error getting image from Redis")
+	} else {
+		log.Println("Current base64 image in Redis: ", currentBase64Image)
+		// image present in redis so read it from there and generate it
+		base64ToPng(currentBase64Image)
 	}
 }
 
@@ -140,7 +222,9 @@ func drawPixelToImage(pixelX int, pixelY int, newColor color.RGBA) (string, stri
 	log.Println(pixelY)
 	log.Println(newColor)
 
-	f, imageFileReadErr := os.Open("./static/image.png")
+	imagePath := "./static/image.png"
+
+	f, imageFileReadErr := os.Open(imagePath)
 
 	if imageFileReadErr != nil {
 		log.Fatal("Error reading image file: ", imageFileReadErr)
@@ -188,11 +272,14 @@ func drawPixelToImage(pixelX int, pixelY int, newColor color.RGBA) (string, stri
 	}
 
 	// Encode as PNG.
-	newImageFile, _ := os.Create("./static/image.png")
+	newImageFile, _ := os.Create(imagePath)
 	imageWriteErr := png.Encode(newImageFile, newImg)
 	if imageWriteErr != nil {
 		log.Fatal("Error writing image: ", imageWriteErr)
 	}
+
+	// save current image as base64 string to Redis
+	saveCurrentImageToRedis()
 
 	return "Successfully placed pixel.", "success"
 }
@@ -261,7 +348,8 @@ func main() {
 		}
 
 		// draw pixel to image
-		pixelDrawStatusMessage, pixelDrawStatus := drawPixelToImage(setPixelRequest.X, setPixelRequest.Y, color.RGBA{R: uint8(setPixelRequest.R), G: uint8(setPixelRequest.G), B: uint8(setPixelRequest.B), A: 0xFF})
+		pixelDrawStatusMessage, pixelDrawStatus := drawPixelToImage(setPixelRequest.X, setPixelRequest.Y,
+			color.RGBA{R: setPixelRequest.Red, G: setPixelRequest.Green, B: setPixelRequest.Blue, A: 0xFF})
 
 		c.JSON(200, gin.H{
 			"status":  pixelDrawStatus,
