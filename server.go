@@ -19,6 +19,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 import _ "github.com/joho/godotenv/autoload"
@@ -190,6 +191,8 @@ func verifyGoogleToken(googleAuthToken string) (string, string) {
 	if audValue != os.Getenv("GOOGLE_AUTH_CLIENT_ID") {
 		return "error", "aud does not match client id"
 	}
+
+	log.Println("Google auth check succeeded")
 
 	return "success", string(body)
 }
@@ -416,9 +419,66 @@ func main() {
 			return
 		}
 
-		log.Println("token verification result", tokenVerificationStatus)
-		log.Println("user: ", tokenVerificationResult)
+		// convert user data to map of strings
+		userDataMap := map[string]string{}
 
+		unmarshalError := json.Unmarshal([]byte(tokenVerificationResult), &userDataMap)
+		if unmarshalError != nil {
+			c.JSON(400, gin.H{
+				"status":  "error",
+				"message": "error unmarshalling Google user account data",
+			})
+			return
+		}
+
+		// get email of user
+		emailValue, ok := userDataMap["email"]
+
+		if !ok {
+			c.JSON(400, gin.H{
+				"status":  "error",
+				"message": "Google user does not have email",
+			})
+			return
+		}
+
+		// rate limit user to only place 1 pixel every 5 minutes
+		rateLimitExpiresAtTime, redisFindUserErr := rdb.Get(ctx, emailValue).Result()
+
+		// get timestamp to expire at
+		expirationInSeconds := 300
+		expirationTimestamp := time.Now().Unix() + int64(expirationInSeconds)
+
+		if redisFindUserErr == redis.Nil {
+			// user rate limit not present so create new one
+			expirationDuration, durationCreationException := time.ParseDuration(strconv.FormatInt(int64(expirationInSeconds), 10) + "s")
+
+			if durationCreationException != nil {
+				log.Fatal("Error creating duration")
+			}
+
+			rateLimitObjCreationErr := rdb.Set(ctx, emailValue, strconv.FormatInt(expirationTimestamp, 10), expirationDuration).Err()
+
+			if rateLimitObjCreationErr != nil {
+				log.Fatal("Issue with Redis connection when creating rate limit for pixel placing")
+			}
+
+			log.Println("Created Redis rate limit object")
+		} else if redisFindUserErr != nil {
+			// error
+			log.Fatal("Error getting user from Redis")
+		} else {
+			log.Println("Using existing Redis rate limit object: ", rateLimitExpiresAtTime)
+
+			// user already exists in Redis so return their rate limit time
+			c.JSON(200, gin.H{
+				"status":  "ratelimit",
+				"message": rateLimitExpiresAtTime,
+			})
+			return
+		}
+
+		// bind set pixel request to json struct
 		err := c.BindJSON(&setPixelRequest)
 
 		if err != nil {
