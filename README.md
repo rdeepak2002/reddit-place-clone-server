@@ -24,6 +24,7 @@ heroku buildpacks:add https://github.com/dmathieu/heroku-buildpack-submodules -i
 ```dotenv
 REDIS_ADDRESS="redis-xxx.com:#####"
 REDIS_PASSWORD="really_long_password_string"
+GOOGLE_AUTH_CLIENT_ID="xxxxx.apps.googleusercontent.com"
 ```
 
 ## Example Embed in README.md

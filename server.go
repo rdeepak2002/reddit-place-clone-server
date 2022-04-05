@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/contrib/static"
@@ -139,6 +140,58 @@ func saveCurrentImageToRedis() {
 	}
 
 	log.Println("Saved base64 image to Redis")
+}
+
+func verifyGoogleToken(googleAuthToken string) (string, string) {
+	url := "https://oauth2.googleapis.com/tokeninfo?id_token=" + googleAuthToken
+	method := "GET"
+
+	client := &http.Client{}
+	req, err := http.NewRequest(method, url, nil)
+
+	if err != nil {
+		fmt.Println(err)
+		return "error", "error forming request"
+	}
+	res, err := client.Do(req)
+	if err != nil {
+		fmt.Println(err)
+		return "error", "error doing request"
+	}
+	defer res.Body.Close()
+
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		fmt.Println(err)
+		return "error", "error reading response body"
+	}
+
+	var responseMap map[string]interface{}
+
+	unmarshalError := json.Unmarshal(body, &responseMap)
+
+	if unmarshalError != nil {
+		fmt.Println(unmarshalError)
+		return "error", "unable to parse response from Google auth"
+	}
+
+	_, ok := responseMap["email"]
+
+	if !ok {
+		return "error", "unable to find email in Google token response"
+	}
+
+	audValue, ok := responseMap["aud"]
+
+	if !ok {
+		return "error", "unable to find aud in Google token response"
+	}
+
+	if audValue != os.Getenv("GOOGLE_AUTH_CLIENT_ID") {
+		return "error", "aud does not match client id"
+	}
+
+	return "success", string(body)
 }
 
 // readEnvironmentVariables reads the port and image options from environment variables.
@@ -312,6 +365,8 @@ func main() {
 
 	config := cors.DefaultConfig()
 	config.AllowOrigins = []string{"http://localhost:8080"}
+	config.AllowHeaders = []string{"Authorization", "Content-Type"}
+	config.AllowCredentials = true
 
 	router.Use(cors.New(config))
 
@@ -336,6 +391,33 @@ func main() {
 		log.Println("________")
 		log.Println("Received request to draw pixel:")
 		log.Println(setPixelRequest)
+
+		// get google auth token string
+		token := c.Request.Header["Authorization"]
+
+		if len(token) < 1 || !strings.HasPrefix(token[0], "Bearer ") {
+			c.JSON(400, gin.H{
+				"status":  "error",
+				"message": "Invalid request. Invalid auth token provided.",
+			})
+			return
+		}
+
+		tokenStr := strings.TrimSpace(token[0][len("Bearer "):])
+
+		// verify the user's google token
+		tokenVerificationStatus, tokenVerificationResult := verifyGoogleToken(tokenStr)
+
+		if tokenVerificationStatus == "error" {
+			c.JSON(400, gin.H{
+				"status":  "error",
+				"message": tokenVerificationResult,
+			})
+			return
+		}
+
+		log.Println("token verification result", tokenVerificationStatus)
+		log.Println("user: ", tokenVerificationResult)
 
 		err := c.BindJSON(&setPixelRequest)
 
