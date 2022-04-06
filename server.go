@@ -450,20 +450,7 @@ func main() {
 		expirationTimestamp := time.Now().Unix() + int64(expirationInSeconds)
 
 		if redisFindUserErr == redis.Nil {
-			// user rate limit not present so create new one
-			expirationDuration, durationCreationException := time.ParseDuration(strconv.FormatInt(int64(expirationInSeconds), 10) + "s")
-
-			if durationCreationException != nil {
-				log.Fatal("Error creating duration")
-			}
-
-			rateLimitObjCreationErr := rdb.Set(ctx, emailValue, strconv.FormatInt(expirationTimestamp, 10), expirationDuration).Err()
-
-			if rateLimitObjCreationErr != nil {
-				log.Fatal("Issue with Redis connection when creating rate limit for pixel placing")
-			}
-
-			log.Println("Created Redis rate limit object")
+			// user rate limit not present so create new one after drawing the pixel
 		} else if redisFindUserErr != nil {
 			// error
 			log.Fatal("Error getting user from Redis")
@@ -497,6 +484,23 @@ func main() {
 			"status":  pixelDrawStatus,
 			"message": pixelDrawStatusMessage,
 		})
+
+		// create the Redis rate limit on pixel drawing success
+		if pixelDrawStatus == "success" {
+			expirationDuration, durationCreationException := time.ParseDuration(strconv.FormatInt(int64(expirationInSeconds), 10) + "s")
+
+			if durationCreationException != nil {
+				log.Fatal("Error creating duration")
+			}
+
+			rateLimitObjCreationErr := rdb.Set(ctx, emailValue, strconv.FormatInt(expirationTimestamp, 10), expirationDuration).Err()
+
+			if rateLimitObjCreationErr != nil {
+				log.Fatal("Issue with Redis connection when creating rate limit for pixel placing")
+			}
+
+			log.Println("Created Redis rate limit object")
+		}
 	})
 
 	// start the server
