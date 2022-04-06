@@ -53,6 +53,7 @@ Create a file in .git/hooks with the following content:
 
 ```shell
 #!/bin/sh
+echo "refreshing submodules"
 git submodule update --remote
 git add .
 ```
