@@ -49,7 +49,7 @@ git submodule update --remote
 
 ## Recommended Pre-Commit Git Hooks
 
-Create a file in .git/hooks with the following content:
+Create a file in .git/hooks with the following content: 
 
 ```shell
 #!/bin/sh
