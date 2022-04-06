@@ -46,3 +46,19 @@ The above example is using the following markdown:
 ```shell
 git submodule update --remote 
 ```
+
+## Recommended Pre-Commit Git Hooks
+
+Create a file in .git/hooks with the following content:
+
+```shell
+#!/bin/sh
+git submodule update --remote
+git add .
+```
+
+Make the script executable with the following command:
+
+```shell
+sudo chmod 777 .git/hooks/pre-commit
+```
